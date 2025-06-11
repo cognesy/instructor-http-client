@@ -2,12 +2,13 @@
 
 namespace Cognesy\Http\Middleware\RecordReplay;
 
+use Cognesy\Events\Dispatchers\EventDispatcher;
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
 use Cognesy\Http\Contracts\HttpClientResponse;
 use Cognesy\Http\Contracts\HttpMiddleware;
 use Cognesy\Http\Data\HttpClientRequest;
 use Cognesy\Http\Middleware\RecordReplay\Events\HttpInteractionRecorded;
-use Cognesy\Utils\Events\EventDispatcher;
+use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * RecordingMiddleware
@@ -24,7 +25,7 @@ class RecordingMiddleware implements HttpMiddleware
     /**
      * @var EventDispatcher|null Event dispatcher
      */
-    private ?EventDispatcher $events;
+    private ?EventDispatcherInterface $events;
     
     /**
      * Constructor
@@ -32,8 +33,10 @@ class RecordingMiddleware implements HttpMiddleware
      * @param string $storageDir Directory to store recordings
      * @param EventDispatcher|null $events Optional event dispatcher
      */
-    public function __construct(string $storageDir, ?EventDispatcher $events = null)
-    {
+    public function __construct(
+        string $storageDir,
+        ?EventDispatcherInterface $events = null
+    ) {
         $this->records = new RequestRecords($storageDir);
         $this->events = $events ?? new EventDispatcher();
     }

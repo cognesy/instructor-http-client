@@ -1,13 +1,13 @@
 <?php
 
-use Cognesy\Http\Adapters\MockHttpResponse;
+use Cognesy\Http\Config\HttpClientConfig;
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
 use Cognesy\Http\Contracts\HttpClientResponse;
 use Cognesy\Http\Contracts\HttpMiddleware;
-use Cognesy\Http\Data\HttpClientConfig;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Drivers\MockHttpDriver;
-use Cognesy\Http\HttpClient;
+use Cognesy\Http\Drivers\Mock\MockHttpDriver;
+use Cognesy\Http\Drivers\Mock\MockHttpResponse;
+use Cognesy\Http\HttpClientBuilder;
 use Cognesy\Http\Middleware\RecordReplay\RecordReplayMiddleware;
 
 beforeEach(function() {
@@ -44,8 +44,7 @@ test('HTTP client with mock driver', function() {
         '{"key":"value"}'
     );
 
-    $httpClient = new HttpClient();
-    $httpClient = $httpClient->withDriver($mockDriver);
+    $httpClient = (new HttpClientBuilder)->withDriver($mockDriver)->create();
 
     $request = new HttpClientRequest(
         'https://api.example.com/test',
@@ -56,7 +55,7 @@ test('HTTP client with mock driver', function() {
     );
 
     // Act
-    $response = $httpClient->handle($request);
+    $response = $httpClient->withRequest($request)->get();
 
     // Assert
     expect($response->statusCode())->toBe(200);
@@ -64,7 +63,7 @@ test('HTTP client with mock driver', function() {
 
     // Verify request was properly passed to the driver
     expect($mockDriver->getReceivedRequests())->toHaveCount(1);
-    expect($mockDriver->getLastRequest()->url())->toBe('https://api.example.com/test');
+    expect($mockDriver->getLastRequest()?->url())->toBe('https://api.example.com/test');
 });
 
 /**
@@ -81,8 +80,7 @@ test('HTTP client with middleware', function() {
         'GET'
     );
 
-    $httpClient = new HttpClient();
-    $httpClient = $httpClient->withDriver($mockDriver);
+    $httpClient = (new HttpClientBuilder)->withDriver($mockDriver)->create();
 
     // Add a simple test middleware that modifies the request
     $httpClient->middleware()->append(new class implements HttpMiddleware {
@@ -103,7 +101,7 @@ test('HTTP client with middleware', function() {
     );
 
     // Act
-    $httpClient->handle($request);
+    $httpClient->withRequest($request)->get();
 
     // Assert - Verify the middleware modified the request
     expect($mockDriver->getLastRequest()->headers())->toHaveKey('X-Test');
@@ -122,13 +120,12 @@ test('HTTP client with record/replay middleware', function() {
     // For this test, we'll create a real HTTP client (not a mock)
     // but we'll include the RecordReplayMiddleware for recording/replaying
     $config = new HttpClientConfig(
-        httpClientType: 'guzzle',
+        driver: 'guzzle',
         connectTimeout: 5,
         requestTimeout: 10
     );
 
-    $httpClient = new HttpClient();
-    $httpClient = $httpClient->withConfig($config);
+    $httpClient = (new HttpClientBuilder)->withConfig($config)->create();
 
     // Add record/replay middleware
     $recordReplayMiddleware = new RecordReplayMiddleware(
@@ -148,7 +145,7 @@ test('HTTP client with record/replay middleware', function() {
     );
 
     // Act
-    $response = $httpClient->handle($request);
+    $response = $httpClient->withRequest($request)->get();
 
     // Assert - We should get a valid response whether it's live or replayed
     expect($response->statusCode())->toBe(200);
@@ -177,8 +174,7 @@ test('mixed testing approach', function() {
     );
 
     // Create the client with middleware
-    $httpClient = new HttpClient();
-    $httpClient = $httpClient->withDriver($mockDriver);
+    $httpClient = (new HttpClientBuilder)->withDriver($mockDriver)->create();
     $httpClient->middleware()->append($recordReplayMiddleware, 'record-replay');
 
     // Request 1: Should be handled by replay if recording exists, or mock if not
@@ -200,11 +196,11 @@ test('mixed testing approach', function() {
     );
 
     // Act
-    $response1 = $httpClient->handle($request1);
+    $response1 = $httpClient->withRequest($request1)->get();
 
     // For request 2, temporarily disable record/replay middleware
     $httpClient->middleware()->remove('record-replay');
-    $response2 = $httpClient->handle($request2);
+    $response2 = $httpClient->withRequest($request2)->get();
 
     // Assert - Both approaches should work in the same test
     expect($response1)->not()->toBeNull();

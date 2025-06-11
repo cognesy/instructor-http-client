@@ -67,7 +67,7 @@ $request = new HttpClientRequest(
 );
 
 // Send the request and get the response
-$response = $client->handle($request);
+$response = $client->withRequest($request)->get();
 
 // Access response data
 $statusCode = $response->statusCode();
@@ -83,12 +83,12 @@ echo "Body: $body\n";
 HTTP requests can fail for various reasons. You should always wrap request handling in a try-catch block:
 
 ```php
-use Cognesy\Http\Exceptions\RequestException;
+use Cognesy\Http\Exceptions\HttpRequestException;
 
 try {
     $response = $client->handle($request);
     // Process the response
-} catch (RequestException $e) {
+} catch (HttpRequestException $e) {
     echo "Request failed: {$e->getMessage()}\n";
     // Handle the error
 }
@@ -169,7 +169,7 @@ $client = new HttpClient('guzzle');
 $client->withClient('symfony');
 
 // Enable debug mode
-$client->withDebug(true);
+$client->withDebugPreset('on');
 ```
 
 ## Simple Request Example
@@ -181,7 +181,7 @@ Let's put everything together with a practical example of making a POST request 
 
 use Cognesy\Http\HttpClient;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Exceptions\RequestException;
+use Cognesy\Http\Exceptions\HttpRequestException;
 
 // Create an HTTP client using the 'guzzle' configuration
 $client = new HttpClient('guzzle');
@@ -205,7 +205,7 @@ $request = new HttpClientRequest(
 
 try {
     // Send the request
-    $response = $client->handle($request);
+    $response = $client->withRequest($request)->get();
 
     // Process the response
     if ($response->statusCode() === 201) {
@@ -219,7 +219,7 @@ try {
         echo "Error: Unexpected status code {$response->statusCode()}\n";
         echo "Response: {$response->body()}\n";
     }
-} catch (RequestException $e) {
+} catch (HttpRequestException $e) {
     echo "Request failed: {$e->getMessage()}\n";
 
     // You might want to log the error or retry the request
@@ -235,7 +235,7 @@ Here's an example of making a GET request to fetch data:
 
 use Cognesy\Http\HttpClient;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Exceptions\RequestException;
+use Cognesy\Http\Exceptions\HttpRequestException;
 
 // Create an HTTP client
 $client = new HttpClient();
@@ -254,7 +254,7 @@ $request = new HttpClientRequest(
 
 try {
     // Send the request
-    $response = $client->handle($request);
+    $response = $client->withRequest($request)->get();
 
     // Process the response
     if ($response->statusCode() === 200) {
@@ -270,7 +270,7 @@ try {
         echo "Error: Unexpected status code {$response->statusCode()}\n";
         echo "Response: {$response->body()}\n";
     }
-} catch (RequestException $e) {
+} catch (HttpRequestException $e) {
     echo "Request failed: {$e->getMessage()}\n";
 }
 ```

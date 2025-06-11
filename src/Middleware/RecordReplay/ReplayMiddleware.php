@@ -2,6 +2,7 @@
 
 namespace Cognesy\Http\Middleware\RecordReplay;
 
+use Cognesy\Events\Dispatchers\EventDispatcher;
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
 use Cognesy\Http\Contracts\HttpClientResponse;
 use Cognesy\Http\Contracts\HttpMiddleware;
@@ -10,7 +11,7 @@ use Cognesy\Http\Middleware\RecordReplay\Events\HttpInteractionFallback;
 use Cognesy\Http\Middleware\RecordReplay\Events\HttpInteractionNotFound;
 use Cognesy\Http\Middleware\RecordReplay\Events\HttpInteractionReplayed;
 use Cognesy\Http\Middleware\RecordReplay\Exceptions\RecordingNotFoundException;
-use Cognesy\Utils\Events\EventDispatcher;
+use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * ReplayMiddleware
@@ -30,21 +31,21 @@ class ReplayMiddleware implements HttpMiddleware
     private bool $fallbackToRealRequests;
     
     /**
-     * @var EventDispatcher|null Event dispatcher
+     * @var \Cognesy\Events\Dispatchers\EventDispatcher|null Event dispatcher
      */
-    private ?EventDispatcher $events;
+    private ?EventDispatcherInterface $events;
     
     /**
      * Constructor
      * 
      * @param string $storageDir Directory with recordings
      * @param bool $fallbackToRealRequests Whether to fallback to real requests if no recording is found
-     * @param EventDispatcher|null $events Optional event dispatcher
+     * @param \Cognesy\Events\Dispatchers\EventDispatcher|null $events Optional event dispatcher
      */
     public function __construct(
         string $storageDir,
         bool $fallbackToRealRequests = true,
-        ?EventDispatcher $events = null
+        ?EventDispatcherInterface $events = null
     ) {
         $this->records = new RequestRecords($storageDir);
         $this->fallbackToRealRequests = $fallbackToRealRequests;
@@ -68,7 +69,11 @@ class ReplayMiddleware implements HttpMiddleware
             $response = $record->toResponse($request->isStreamed());
             
             // Dispatch event
-            $this->events->dispatch(new HttpInteractionReplayed($request, $response));
+            $this->events->dispatch(new HttpInteractionReplayed([
+                'method' => $request->method(),
+                'url' => $request->url(),
+                'statusCode' => $response->statusCode()
+            ]));
             
             return $response;
         }
@@ -76,7 +81,10 @@ class ReplayMiddleware implements HttpMiddleware
         // No recording found, decide what to do
         if (!$this->fallbackToRealRequests) {
             // Dispatch event
-            $this->events->dispatch(new HttpInteractionNotFound($request));
+            $this->events->dispatch(new HttpInteractionNotFound([
+                'method' => $request->method(),
+                'url' => $request->url(),
+            ]));
             
             // No fallback, throw exception
             throw new RecordingNotFoundException(

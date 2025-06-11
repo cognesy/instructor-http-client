@@ -2,12 +2,13 @@
 
 namespace Cognesy\Http\Middleware\RecordReplay;
 
+use Cognesy\Events\Dispatchers\EventDispatcher;
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
 use Cognesy\Http\Contracts\HttpClientResponse;
 use Cognesy\Http\Contracts\HttpMiddleware;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Utils\Events\EventDispatcher;
 use InvalidArgumentException;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 
 /**
@@ -48,7 +49,7 @@ class RecordReplayMiddleware implements HttpMiddleware
     /**
      * Event dispatcher
      */
-    private EventDispatcher $events;
+    private EventDispatcherInterface $events;
     
     /**
      * Whether to fallback to real requests when in replay mode and no recording is found
@@ -61,13 +62,13 @@ class RecordReplayMiddleware implements HttpMiddleware
      * @param string $mode The operation mode (pass, record, replay)
      * @param string|null $storageDir Directory to store recordings
      * @param bool $fallbackToRealRequests Whether to fallback to real requests in replay mode
-     * @param EventDispatcher|null $events Optional event dispatcher
+     * @param \Cognesy\Events\Dispatchers\EventDispatcher|null $events Optional event dispatcher
      */
     public function __construct(
         string $mode = self::MODE_PASS,
         ?string $storageDir = null,
         bool $fallbackToRealRequests = true,
-        ?EventDispatcher $events = null
+        ?EventDispatcherInterface $events = null
     ) {
         if (!in_array($mode, [self::MODE_PASS, self::MODE_RECORD, self::MODE_REPLAY])) {
             throw new InvalidArgumentException("Invalid mode: $mode");

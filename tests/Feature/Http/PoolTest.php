@@ -1,16 +1,16 @@
 <?php
 
-use Cognesy\Http\Data\HttpClientConfig;
+use Cognesy\Http\Config\HttpClientConfig;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Drivers\GuzzleDriver;
-use Cognesy\Http\Drivers\LaravelDriver;
-use Cognesy\Http\Drivers\SymfonyDriver;
+use Cognesy\Http\Drivers\Guzzle\GuzzleDriver;
+use Cognesy\Http\Drivers\Laravel\LaravelDriver;
+use Cognesy\Http\Drivers\Symfony\SymfonyDriver;
 use Cognesy\Utils\Result\Failure;
 use Cognesy\Utils\Result\Success;
 
 it('tests pool method for GuzzleDriver with failOnError=true', function () {
     $config = HttpClientConfig::fromArray([
-        'httpClientType' => 'guzzle',
+        'httpClientDriver' => 'guzzle',
         'maxConcurrent' => 5,
         'requestTimeout' => 1,
         'connectTimeout' => 1,
@@ -30,7 +30,7 @@ it('tests pool method for GuzzleDriver with failOnError=true', function () {
 
 it('tests pool method for GuzzleDriver with failOnError=false', function () {
     $config = HttpClientConfig::fromArray([
-        'httpClientType' => 'guzzle',
+        'httpClientDriver' => 'guzzle',
         'maxConcurrent' => 5,
         'requestTimeout' => 1,
         'connectTimeout' => 1,
@@ -54,7 +54,7 @@ it('tests pool method for GuzzleDriver with failOnError=false', function () {
 
 it('tests pool method for LaravelDriver with failOnError=true', function () {
     $config = HttpClientConfig::fromArray([
-        'httpClientType' => 'laravel',
+        'httpClientDriver' => 'laravel',
         'maxConcurrent' => 5,
         'requestTimeout' => 1,
         'connectTimeout' => 1,
@@ -74,7 +74,7 @@ it('tests pool method for LaravelDriver with failOnError=true', function () {
 
 it('tests pool method for LaravelDriver with failOnError=false', function () {
     $config = HttpClientConfig::fromArray([
-        'httpClientType' => 'laravel',
+        'httpClientDriver' => 'laravel',
         'maxConcurrent' => 5,
         'requestTimeout' => 1,
         'connectTimeout' => 1,
@@ -98,7 +98,7 @@ it('tests pool method for LaravelDriver with failOnError=false', function () {
 
 it('tests pool method for SymfonyDriver with failOnError=true', function () {
     $config = HttpClientConfig::fromArray([
-        'httpClientType' => 'symfony',
+        'httpClientDriver' => 'symfony',
         'maxConcurrent' => 5,
         'requestTimeout' => 1,
         'connectTimeout' => 1,
@@ -106,7 +106,7 @@ it('tests pool method for SymfonyDriver with failOnError=true', function () {
         'failOnError' => true,
     ]);
 
-    $driver = new SymfonyDriver($config);
+    $driver = new SymfonyDriver(config: $config);
     $requests = [
         new HttpClientRequest('https://example.com', 'GET', [], [], []),
         new HttpClientRequest('https://invalid-domain-that-does-not-exist.com', 'GET', [], [], []),
@@ -118,7 +118,7 @@ it('tests pool method for SymfonyDriver with failOnError=true', function () {
 
 it('tests pool method for SymfonyDriver with failOnError=false', function () {
     $config = HttpClientConfig::fromArray([
-        'httpClientType' => 'symfony',
+        'httpClientDriver' => 'symfony',
         'maxConcurrent' => 5,
         'requestTimeout' => 1,
         'connectTimeout' => 1,
@@ -126,7 +126,7 @@ it('tests pool method for SymfonyDriver with failOnError=false', function () {
         'failOnError' => false,
     ]);
 
-    $driver = new SymfonyDriver($config);
+    $driver = new SymfonyDriver(config: $config);
     $requests = [
         new HttpClientRequest('https://example.com', 'GET', [], [], []),
         new HttpClientRequest('https://invalid-domain-that-does-not-exist.com', 'GET', [], [], []),

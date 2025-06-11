@@ -38,7 +38,7 @@ $streamingRequest = $request->withStreaming(true);
 
 // Create a client and send the request
 $client = new HttpClient();
-$response = $client->handle($streamingRequest);
+$response = $client->withRequest($streamingRequest)->get();
 ```
 
 The `stream` option tells the HTTP client to treat the response as a stream, which means:
@@ -82,7 +82,7 @@ Here's an example of downloading a large file with streaming to avoid memory iss
 ```php
 use Cognesy\Http\HttpClient;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Exceptions\RequestException;
+use Cognesy\Http\Exceptions\HttpRequestException;
 
 // Create a streaming request
 $request = new HttpClientRequest(
@@ -96,7 +96,7 @@ $request = new HttpClientRequest(
 $client = new HttpClient();
 
 try {
-    $response = $client->handle($request);
+    $response = $client->withRequest($request)->get();
 
     // Open a file handle to save the file
     $fileHandle = fopen('downloaded-file.zip', 'wb');
@@ -121,7 +121,7 @@ try {
     fclose($fileHandle);
     echo "\nDownload complete!\n";
 
-} catch (RequestException $e) {
+} catch (HttpRequestException $e) {
     echo "Download failed: {$e->getMessage()}\n";
 
     // Clean up if file was partially downloaded
@@ -220,7 +220,7 @@ $request = new HttpClientRequest(
     options: ['stream' => true]
 );
 
-$response = $client->handle($request);
+$response = $client->withRequest($request)->get();
 
 // Process the stream line by line
 foreach ($response->stream() as $line) {
@@ -310,7 +310,7 @@ $request = new HttpClientRequest(
 );
 
 try {
-    $response = $client->handle($request);
+    $response = $client->withRequest($request)->get();
 
     $fullResponse = '';
 

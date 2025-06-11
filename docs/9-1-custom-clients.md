@@ -28,16 +28,7 @@ Here's a template for creating a custom HTTP client driver:
 
 namespace YourNamespace\Http\Drivers;
 
-use Cognesy\Http\Contracts\CanHandleHttpRequest;
-use Cognesy\Http\Contracts\HttpClientResponse;
-use Cognesy\Http\Data\HttpClientConfig;
-use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Events\HttpRequestFailed;
-use Cognesy\Http\Events\HttpRequestSent;
-use Cognesy\Http\Events\HttpResponseReceived;
-use Cognesy\Http\Exceptions\RequestException;
-use Cognesy\Utils\Events\EventDispatcher;
-use Exception;
+use Cognesy\Events\Dispatchers\EventDispatcher;use Cognesy\Http\Config\HttpClientConfig;use Cognesy\Http\Contracts\CanHandleHttpRequest;use Cognesy\Http\Contracts\HttpClientResponse;use Cognesy\Http\Data\HttpClientRequest;use Cognesy\Http\Events\HttpRequestFailed;use Cognesy\Http\Events\HttpRequestSent;use Cognesy\Http\Events\HttpResponseReceived;use Cognesy\Http\Exceptions\HttpRequestException;use Exception;
 
 class CustomHttpDriver implements CanHandleHttpRequest
 {
@@ -71,12 +62,12 @@ class CustomHttpDriver implements CanHandleHttpRequest
         $streaming = $request->isStreamed();
 
         // Dispatch event before sending request
-        $this->events->dispatch(new HttpRequestSent(
-            $url,
-            $method,
-            $headers,
-            $request->body()->toArray()
-        ));
+        $this->events->dispatch(new HttpRequestSent([
+            'url' => $url,
+            'method' => $method,
+            'headers' => $headers,
+            'body' => $request->body()->toArray(),
+        ]));
 
         try {
             // Use your HTTP client to make the request
@@ -90,23 +81,25 @@ class CustomHttpDriver implements CanHandleHttpRequest
             ]);
 
             // Dispatch event for successful response
-            $this->events->dispatch(new HttpResponseReceived($response->getStatusCode()));
+            $this->events->dispatch(new HttpResponseReceived([
+                'statusCode' => $response->statusCode()
+            ]));
 
             // Return the response wrapped in your adapter
             return new YourHttpClientResponse($response, $streaming);
 
         } catch (Exception $e) {
             // Dispatch event for failed request
-            $this->events->dispatch(new HttpRequestFailed(
-                $url,
-                $method,
-                $headers,
-                $request->body()->toArray(),
-                $e->getMessage()
-            ));
+            $this->events->dispatch(new HttpRequestFailed([
+                'url' => $url,
+                'method' => $method,
+                'headers' => $headers,
+                'body' => $request->body()->toArray(),
+                'errors' => $e->getMessage(),
+            ]));
 
             // Wrap the exception
-            throw new RequestException($e);
+            throw new HttpRequestException($e);
         }
     }
 
@@ -198,13 +191,11 @@ class YourHttpClientResponse implements HttpClientResponse
 Once you've implemented your custom driver, you can use it with the `HttpClient`:
 
 ```php
-use Cognesy\Http\HttpClient;
-use Cognesy\Http\Data\HttpClientConfig;
-use YourNamespace\Http\Drivers\CustomHttpDriver;
+use Cognesy\Http\Config\HttpClientConfig;use Cognesy\Http\HttpClient;use YourNamespace\Http\Drivers\CustomHttpDriver;
 
 // Create a configuration for your custom driver
 $config = new HttpClientConfig(
-    httpClientType: 'custom',
+    driver: 'custom',
     connectTimeout: 3,
     requestTimeout: 30,
     idleTimeout: -1,
@@ -217,12 +208,10 @@ $config = new HttpClientConfig(
 $customDriver = new CustomHttpDriver($config);
 
 // Create a client with your driver
-$client = new HttpClient();
-$client->withDriver($customDriver);
+$client = (new HttpClient)->withDriver($customDriver);
 
 // Use the client as usual
-$request = new HttpClientRequest(/* ... */);
-$response = $client->handle($request);
+$response = $client->handle(new HttpClientRequest(/* ... */));
 ```
 
 ### Real-World Example: Creating a cURL Driver
@@ -234,16 +223,7 @@ Here's a practical example of implementing a custom driver using PHP's cURL exte
 
 namespace YourNamespace\Http\Drivers;
 
-use Cognesy\Http\Contracts\CanHandleHttpRequest;
-use Cognesy\Http\Contracts\HttpClientResponse;
-use Cognesy\Http\Data\HttpClientConfig;
-use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Events\HttpRequestFailed;
-use Cognesy\Http\Events\HttpRequestSent;
-use Cognesy\Http\Events\HttpResponseReceived;
-use Cognesy\Http\Exceptions\RequestException;
-use Cognesy\Utils\Events\EventDispatcher;
-use YourNamespace\Http\Adapters\CurlHttpResponse;
+use Cognesy\Events\Dispatchers\EventDispatcher;use Cognesy\Http\Config\HttpClientConfig;use Cognesy\Http\Contracts\CanHandleHttpRequest;use Cognesy\Http\Contracts\HttpClientResponse;use Cognesy\Http\Data\HttpClientRequest;use Cognesy\Http\Events\HttpRequestFailed;use Cognesy\Http\Events\HttpRequestSent;use Cognesy\Http\Events\HttpResponseReceived;use Cognesy\Http\Exceptions\HttpRequestException;use YourNamespace\Http\Adapters\CurlHttpResponse;
 
 class CurlHttpDriver implements CanHandleHttpRequest
 {
@@ -421,7 +401,9 @@ class CurlHttpDriver implements CanHandleHttpRequest
             curl_close($ch);
 
             // Dispatch event for successful response
-            $this->events->dispatch(new HttpResponseReceived($response->statusCode()));
+            $this->events->dispatch(new HttpResponseReceived([
+                'statusCode' => $response->statusCode()
+            ]));
 
             return $response;
 
@@ -432,16 +414,16 @@ class CurlHttpDriver implements CanHandleHttpRequest
             }
 
             // Dispatch event for failed request
-            $this->events->dispatch(new HttpRequestFailed(
-                $url,
-                $method,
-                $headers,
-                $request->body()->toArray(),
-                $e->getMessage()
-            ));
+            $this->events->dispatch(new HttpRequestFailed([
+                'url' => $url,
+                'methods' => $method,
+                'headers' => $headers,
+                'body' => $request->body()->toArray(),
+                'errors' => $e->getMessage()
+            ]));
 
             // Wrap the exception
-            throw new RequestException($e);
+            throw new HttpRequestException($e);
         }
     }
 }

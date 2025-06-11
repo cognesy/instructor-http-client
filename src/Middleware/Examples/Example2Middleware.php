@@ -2,7 +2,6 @@
 
 namespace Cognesy\Http\Middleware\Examples;
 
-use;
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
 use Cognesy\Http\Contracts\HttpClientResponse;
 use Cognesy\Http\Contracts\HttpMiddleware;
@@ -29,15 +28,17 @@ class Example2Middleware implements HttpMiddleware
         return new class($response, $param) implements HttpClientResponse {
             public function __construct(
                 private HttpClientResponse $wrapped,
-                private string $param
+                private string $param,
             ) {}
 
-            public function statusCode(): int   { return $this->wrapped->statusCode(); }
-            public function headers(): array    { return $this->wrapped->headers(); }
-            public function body(): string  { return $this->wrapped->body(); }
+            public function statusCode(): int { return $this->wrapped->statusCode(); }
+            public function headers(): array { return $this->wrapped->headers(); }
+            public function body(): string { return $this->wrapped->body(); }
+            public function isStreamed(): bool { return $this->wrapped->isStreamed(); }
 
             public function stream(int $chunkSize = 1): Generator
             {
+                // do something with param
                 foreach ($this->wrapped->stream($chunkSize) as $chunk) {
                     // do something with the chunk e.g. using $this->param
                     yield $chunk;

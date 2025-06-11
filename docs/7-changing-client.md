@@ -146,15 +146,16 @@ This allows you to adapt to different requirements within the same application.
 The `HttpClient` class provides a static `make` method as an alternative to the constructor:
 
 ```php
-use Cognesy\Http\HttpClient;
-use Cognesy\Utils\Events\EventDispatcher;
+use Cognesy\Events\Dispatchers\EventDispatcher;
 
 // Create with specific client
-$client = HttpClient::make('guzzle');
+$client = (new HttpClientFactory)->make('guzzle');
+// Equivalent to:
+$client = (new HttpClientFactory)->fromPreset('guzzle');
 
 // Create with default client and custom event dispatcher
 $events = new EventDispatcher();
-$client = HttpClient::make('', $events);
+$client = (new HttpClientFactory($events))->default();
 ```
 
 ## Client-Specific Configuration
@@ -283,7 +284,7 @@ Here's an example of selecting different client configurations based on the task
 
 use Cognesy\Http\HttpClient;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Exceptions\RequestException;
+use Cognesy\Http\Exceptions\HttpRequestException;
 
 function fetchApiData($url, $apiKey) {
     // Use a client with short timeouts for quick API calls
@@ -301,8 +302,8 @@ function fetchApiData($url, $apiKey) {
     );
 
     try {
-        return $client->handle($request);
-    } catch (RequestException $e) {
+        return $client->withRequest($request)->get();
+    } catch (HttpRequestException $e) {
         // Handle error
         throw $e;
     }
@@ -321,7 +322,7 @@ function downloadLargeFile($url, $outputPath) {
     );
 
     try {
-        $response = $client->handle($request);
+        $response = $client->withRequest($request)->get();
 
         $fileHandle = fopen($outputPath, 'wb');
         foreach ($response->stream(8192) as $chunk) {
@@ -330,7 +331,7 @@ function downloadLargeFile($url, $outputPath) {
         fclose($fileHandle);
 
         return true;
-    } catch (RequestException $e) {
+    } catch (HttpRequestException $e) {
         // Handle error
         if (file_exists($outputPath)) {
             unlink($outputPath); // Remove partial file
@@ -358,7 +359,7 @@ function generateAiResponse($prompt) {
     );
 
     try {
-        $response = $client->handle($request);
+        $response = $client->withRequest($request)->get();
 
         $result = '';
         foreach ($response->stream() as $chunk) {
@@ -366,7 +367,7 @@ function generateAiResponse($prompt) {
         }
 
         return json_decode($result, true);
-    } catch (RequestException $e) {
+    } catch (HttpRequestException $e) {
         // Handle error
         throw $e;
     }

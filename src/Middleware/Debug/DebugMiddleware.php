@@ -2,11 +2,9 @@
 
 namespace Cognesy\Http\Middleware\Debug;
 
-use Cognesy\Http\BaseMiddleware;
 use Cognesy\Http\Contracts\HttpClientResponse;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Debug\Debug;
-use Cognesy\Utils\Events\EventDispatcher;
+use Cognesy\Http\Middleware\Base\BaseMiddleware;
 
 /**
  * DebugMiddleware
@@ -17,24 +15,22 @@ use Cognesy\Utils\Events\EventDispatcher;
 class DebugMiddleware extends BaseMiddleware
 {
     public function __construct(
-        protected ?Debug $debug = null,
-        protected ?EventDispatcher $events = null,
-    ) {
-        $this->events = $events ?? new EventDispatcher();
-        $this->debug = $debug ?? new Debug();
+        protected Debug $debug,
+    ) {}
+
+    protected function shouldExecute(HttpClientRequest $request): bool {
+        return $this->debug->isEnabled();
     }
 
     protected function beforeRequest(HttpClientRequest $request): void {
-        $this->debug->tryDumpUrl($request->url());
-        $this->debug->tryDumpRequest($request);
-        $this->debug->tryDumpTrace();
+        $this->debug->handleRequest($request);
     }
 
     protected function afterRequest(
         HttpClientRequest  $request,
         HttpClientResponse $response
     ): HttpClientResponse {
-        $this->debug->tryDumpResponse($response, ['stream' => $request->isStreamed()]);
+        $this->debug->handleResponse($response);
         return $response;
     }
 
@@ -42,13 +38,13 @@ class DebugMiddleware extends BaseMiddleware
         HttpClientRequest  $request,
         HttpClientResponse $response,
     ): bool {
-        return true; //$request->isStreamed();
+        return $request->isStreamed();
     }
 
     protected function toResponse(
         HttpClientRequest  $request,
         HttpClientResponse $response
     ): HttpClientResponse {
-        return new DebugResponseDecorator($request, $response);
+        return new DebugResponseDecorator($request, $response, $this->debug);
     }
 }

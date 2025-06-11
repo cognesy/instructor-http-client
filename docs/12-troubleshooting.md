@@ -184,7 +184,7 @@ use Cognesy\Http\HttpClient;
 
 // Method 1: Using the withDebug convenience method
 $client = new HttpClient();
-$client->withDebug(true);
+$client->withDebugPreset('on');
 
 // Method 2: Enable debug in configuration
 $config = [
@@ -218,10 +218,7 @@ return [
 The HTTP client dispatches events at key points in the request lifecycle:
 
 ```php
-use Cognesy\Http\Events\HttpRequestSent;
-use Cognesy\Http\Events\HttpResponseReceived;
-use Cognesy\Http\Events\HttpRequestFailed;
-use Cognesy\Utils\Events\EventDispatcher;
+use Cognesy\Events\Dispatchers\EventDispatcher;use Cognesy\Http\Events\HttpRequestFailed;use Cognesy\Http\Events\HttpRequestSent;use Cognesy\Http\Events\HttpResponseReceived;
 
 // Create an event dispatcher with custom listeners
 $events = new EventDispatcher();
@@ -305,10 +302,7 @@ Create a custom logging middleware:
 
 namespace YourNamespace\Http\Middleware;
 
-use Cognesy\Http\BaseMiddleware;
-use Cognesy\Http\Contracts\HttpClientResponse;
-use Cognesy\Http\Data\HttpClientRequest;
-use Psr\Log\LoggerInterface;
+use Cognesy\Http\Contracts\HttpClientResponse;use Cognesy\Http\Data\HttpClientRequest;use Cognesy\Http\Middleware\Base\BaseMiddleware;use Psr\Log\LoggerInterface;
 
 class DetailedLoggingMiddleware extends BaseMiddleware
 {
@@ -397,11 +391,7 @@ For production environments, consider implementing distributed tracing with syst
 
 namespace YourNamespace\Http\Middleware;
 
-use Cognesy\Http\BaseMiddleware;
-use Cognesy\Http\Contracts\HttpClientResponse;
-use Cognesy\Http\Data\HttpClientRequest;
-use OpenTelemetry\API\Trace\TracerInterface;
-use OpenTelemetry\API\Trace\SpanKind;
+use Cognesy\Http\Contracts\HttpClientResponse;use Cognesy\Http\Data\HttpClientRequest;use Cognesy\Http\Middleware\Base\BaseMiddleware;use OpenTelemetry\API\Trace\SpanKind;use OpenTelemetry\API\Trace\TracerInterface;
 
 class OpenTelemetryMiddleware extends BaseMiddleware
 {
@@ -469,12 +459,12 @@ Proper error handling is crucial for building robust applications. Here are some
 The simplest approach is to catch the `RequestException`:
 
 ```php
-use Cognesy\Http\Exceptions\RequestException;
+use Cognesy\Http\Exceptions\HttpRequestException;
 
 try {
     $response = $client->handle($request);
     // Process successful response
-} catch (RequestException $e) {
+} catch (HttpRequestException $e) {
     // Handle error
     echo "Request failed: {$e->getMessage()}\n";
 }
@@ -689,7 +679,7 @@ namespace YourNamespace;
 
 use Cognesy\Http\HttpClient;
 use Cognesy\Http\Data\HttpClientRequest;
-use Cognesy\Http\Exceptions\RequestException;
+use Cognesy\Http\Exceptions\HttpRequestException;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 
@@ -773,7 +763,7 @@ class ApiService {
                     'max_attempts' => $maxAttempts,
                 ]);
 
-                $response = $this->client->handle($request);
+                $response = $this->client->withRequest($request)->get();
 
                 // If we got here in HALF_OPEN state, reset the circuit
                 if ($circuitBreaker['state'] === 'HALF_OPEN') {
@@ -817,7 +807,7 @@ class ApiService {
                     // Client errors or max retries reached
                     return $this->handleErrorResponse($response, $endpoint, $params);
                 }
-            } catch (RequestException $e) {
+            } catch (HttpRequestException $e) {
                 $this->logger->error("Request exception: {$e->getMessage()}", [
                     'url' => $url,
                     'attempt' => $attempts + 1,
@@ -1123,7 +1113,7 @@ use Cognesy\Http\HttpClient;
 
 // Method 1: Using the withDebug convenience method
 $client = new HttpClient();
-$client->withDebug(true);
+$client->withDebugPreset('on');
 
 // Method 2: Enable debug in configuration
 $config = [
@@ -1157,10 +1147,7 @@ return [
 The HTTP client dispatches events at key points in the request lifecycle:
 
 ```php
-use Cognesy\Http\Events\HttpRequestSent;
-use Cognesy\Http\Events\HttpResponseReceived;
-use Cognesy\Http\Events\HttpRequestFailed;
-use Cognesy\Utils\Events\EventDispatcher;
+use Cognesy\Events\Dispatchers\EventDispatcher;use Cognesy\Http\Events\HttpRequestFailed;use Cognesy\Http\Events\HttpRequestSent;use Cognesy\Http\Events\HttpResponseReceived;
 
 // Create an event dispatcher with custom listeners
 $events = new EventDispatcher();
@@ -1244,10 +1231,7 @@ Create a custom logging middleware:
 
 namespace YourNamespace\Http\Middleware;
 
-use Cognesy\Http\BaseMiddleware;
-use Cognesy\Http\Contracts\HttpClientResponse;
-use Cognesy\Http\Data\HttpClientRequest;
-use Psr\Log\LoggerInterface;
+use Cognesy\Http\Contracts\HttpClientResponse;use Cognesy\Http\Data\HttpClientRequest;use Cognesy\Http\Middleware\Base\BaseMiddleware;use Psr\Log\LoggerInterface;
 
 class DetailedLoggingMiddleware extends BaseMiddleware
 {
