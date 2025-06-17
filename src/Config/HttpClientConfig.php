@@ -1,6 +1,9 @@
 <?php
 namespace Cognesy\Http\Config;
 
+use Cognesy\Config\Dsn;
+use Cognesy\Config\Exceptions\ConfigurationException;
+
 /**
  * Class HttpClientConfig
  *
@@ -10,13 +13,17 @@ final class HttpClientConfig
 {
     public const CONFIG_GROUP = 'http';
 
+    public static function group() : string {
+        return self::CONFIG_GROUP;
+    }
+
     /**
      * Constructor for HttpClientConfig.
      *
      * @param string $driver The driver name of HTTP client.
-     * @param int $connectTimeout Connection timeout in seconds.
-     * @param int $requestTimeout Request timeout in seconds.
-     * @param int $idleTimeout Idle timeout in seconds.
+     * @param int $connectTimeout Max time to connect in seconds.
+     * @param int $requestTimeout Max total request execution time in seconds.
+     * @param int $idleTimeout Idle timeout in seconds (if supported by the driver).
      * @param int $maxConcurrent Maximum number of concurrent connections.
      * @param int $poolTimeout Pool timeout in seconds.
      * @param bool $failOnError Whether to fail on error.
@@ -26,14 +33,17 @@ final class HttpClientConfig
         public readonly int    $connectTimeout = 3,
         public readonly int    $requestTimeout = 30,
         public readonly int    $idleTimeout = -1,
+        public readonly int    $streamChunkSize = 256,
         // Concurrency-related properties
         public readonly int    $maxConcurrent = 5,
         public readonly int    $poolTimeout = 120,
         public readonly bool   $failOnError = false,
     ) {}
 
-    public static function group() : string {
-        return self::CONFIG_GROUP;
+    public static function fromDsn(string $dsn) : HttpClientConfig {
+        $data = Dsn::fromString($dsn)->toArray();
+        unset($data['preset']);
+        return self::fromArray($data);
     }
 
     /**
@@ -43,15 +53,16 @@ final class HttpClientConfig
      * @return HttpClientConfig The corresponding HttpClientConfig instance based on the provided array.
      */
     public static function fromArray(array $config) : HttpClientConfig {
-        return new HttpClientConfig(
-            driver: $config['driver'] ?? 'guzzle',
-            connectTimeout: $config['connectTimeout'] ?? 3,
-            requestTimeout: $config['requestTimeout'] ?? 30,
-            idleTimeout: $config['idleTimeout'] ?? -1,
-            maxConcurrent: $config['maxConcurrent'] ?? 5,
-            poolTimeout: $config['poolTimeout'] ?? 120,
-            failOnError: $config['failOnError'] ?? false,
-        );
+        try {
+            $instance = new self(...$config);
+        } catch (\InvalidArgumentException $e) {
+            $data = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            throw new ConfigurationException(
+                message: "Failed to create HttpClientConfig from array:\n$data\nError: {$e->getMessage()}",
+                previous: $e
+            );
+        }
+        return $instance;
     }
 
     public function toArray() : array {
@@ -60,6 +71,7 @@ final class HttpClientConfig
             'connectTimeout' => $this->connectTimeout,
             'requestTimeout' => $this->requestTimeout,
             'idleTimeout' => $this->idleTimeout,
+            'streamChunkSize' => $this->streamChunkSize,
             'maxConcurrent' => $this->maxConcurrent,
             'poolTimeout' => $this->poolTimeout,
             'failOnError' => $this->failOnError,
