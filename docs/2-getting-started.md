@@ -1,6 +1,10 @@
 ---
 title: Getting Started
 description: 'Learn how to use the Instructor HTTP client API in your PHP project.'
+doctest_case_dir: 'codeblocks/D03_Docs_HTTP'
+doctest_case_prefix: 'GettingStarted_'
+doctest_included_types: ['php']
+doctest_min_lines: 10
 ---
 
 ## Installation
@@ -42,20 +46,18 @@ The library requires:
 Using the Instructor HTTP client API involves a few key steps:
 
 1. Create an `HttpClient` instance
-2. Create an `HttpClientRequest` object
+2. Create an `HttpRequest` object
 3. Use the client to handle the request
-4. Process the response0
+4. Process the response
 
 Here's a simple example:
 
 ```php
-<?php
-
 use Cognesy\Http\HttpClient;
 use Cognesy\Http\Data\HttpRequest;
 
 // Create a new HTTP client (uses the default client from configuration)
-$client = new HttpClient();
+$client = HttpClient::default();
 
 // Create a request
 $request = new HttpRequest(
@@ -104,7 +106,7 @@ Create the configuration files in your project:
 
 **config/http.php:**
 ```php
-<?php
+// @doctest skip=true
 return [
     'defaultClient' => 'guzzle',
     'clients' => [
@@ -141,7 +143,6 @@ return [
 
 **config/debug.php:**
 ```php
-<?php
 return [
     'http' => [
         'enabled' => false, // enable/disable debug
@@ -166,13 +167,13 @@ You can also configure the client at runtime:
 use Cognesy\Http\HttpClient;
 
 // Create client with specific configuration
-$client = new HttpClient('guzzle');
+$client = HttpClient::using('guzzle');
 
-// Or switch to a different configuration
-$client->using('symfony');
-
-// Enable debug mode
-$client->withDebugPreset('on');
+// Or create with debug enabled
+$client = (new HttpClientBuilder())
+    ->withPreset('guzzle')
+    ->withDebugPreset('on')
+    ->create();
 ```
 
 ## Simple Request Example
@@ -180,8 +181,6 @@ $client->withDebugPreset('on');
 Let's put everything together with a practical example of making a POST request to create a new resource:
 
 ```php
-<?php
-
 use Cognesy\Http\HttpClient;
 use Cognesy\Http\Data\HttpRequest;
 use Cognesy\Http\Exceptions\HttpRequestException;
@@ -234,8 +233,6 @@ try {
 Here's an example of making a GET request to fetch data:
 
 ```php
-<?php
-
 use Cognesy\Http\HttpClient;
 use Cognesy\Http\Data\HttpRequest;
 use Cognesy\Http\Exceptions\HttpRequestException;

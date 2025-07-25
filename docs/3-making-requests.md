@@ -1,17 +1,21 @@
 ---
 title: Making HTTP Requests
 description: 'Learn how to create and send HTTP requests using the Instructor HTTP client API.'
+doctest_case_dir: 'codeblocks/D03_Docs_HTTP'
+doctest_case_prefix: 'MakingResponses_'
+doctest_included_types: ['php']
+doctest_min_lines: 10
 ---
 
 The Instructor HTTP client API provides a flexible and consistent way to create and send HTTP requests across different client implementations. This chapter covers the details of building and customizing HTTP requests.
 
 ## Creating Requests
 
-All HTTP requests are created using the `HttpClientRequest` class, which encapsulates the various components of an HTTP request.
+All HTTP requests are created using the `HttpRequest` class, which encapsulates the various components of an HTTP request.
 
 ### Basic Request Creation
 
-The constructor for `HttpClientRequest` takes several parameters:
+The constructor for `HttpRequest` takes several parameters:
 
 ```php
 use Cognesy\Http\Data\HttpRequest;

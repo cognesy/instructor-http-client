@@ -1,6 +1,10 @@
 ---
 title: Customizing Client Configuration
 description: 'Learn how to configure different HTTP clients using the Instructor HTTP client API.'
+doctest_case_dir: 'codeblocks/D03_Docs_HTTP'
+doctest_case_prefix: 'ClientConfig_'
+doctest_included_types: ['php']
+doctest_min_lines: 10
 ---
 
 The Instructor HTTP client API offers extensive configuration options to customize client behavior for different scenarios. This chapter explores how to configure clients through configuration files and at runtime.
@@ -14,7 +18,6 @@ The primary configuration files for the HTTP client are:
 This file defines the available client types and their settings:
 
 ```php
-<?php
 return [
     'defaultClient' => 'guzzle',
     'clients' => [
@@ -54,7 +57,6 @@ return [
 This file controls debugging options for HTTP requests and responses:
 
 ```php
-<?php
 return [
     'http' => [
         'enabled' => false, // enable/disable debug
