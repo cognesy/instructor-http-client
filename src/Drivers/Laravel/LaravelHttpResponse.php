@@ -31,6 +31,7 @@ class LaravelHttpResponse implements HttpResponse
         $this->streamChunkSize = $streamChunkSize;
     }
 
+    #[\Override]
     public function statusCode(): int {
         return $this->response->status();
     }
@@ -40,14 +41,17 @@ class LaravelHttpResponse implements HttpResponse
      *
      * @return array<string, string>
      */
+    #[\Override]
     public function headers(): array {
         return $this->response->headers();
     }
 
+    #[\Override]
     public function body(): string {
         return $this->response->body();
     }
 
+    #[\Override]
     public function isStreamed(): bool {
         return $this->streaming;
     }
@@ -55,10 +59,11 @@ class LaravelHttpResponse implements HttpResponse
     /**
      * Read chunks of the stream
      *
-     * @param int $chunkSize
-     * @return iterable<string>
+     * @param int|null $chunkSize
+     * @return \Generator<string>
      */
-    public function stream(?int $chunkSize = null): iterable {
+    #[\Override]
+    public function stream(?int $chunkSize = null): \Generator {
         //if (!$this->streaming) {
         //    $chunk = $this->body();
         //    $this->events->dispatch(new HttpResponseChunkReceived($chunk));

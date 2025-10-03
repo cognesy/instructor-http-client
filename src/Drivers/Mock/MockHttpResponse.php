@@ -82,6 +82,9 @@ class MockHttpResponse implements HttpResponse
         array $headers = []
     ): self {
         $body = is_string($data) ? $data : json_encode($data, JSON_UNESCAPED_SLASHES);
+        if ($body === false) {
+            $body = '';
+        }
         $headers = ['content-type' => 'application/json', ...$headers];
         return new self($statusCode, $headers, $body);
     }
@@ -113,6 +116,7 @@ class MockHttpResponse implements HttpResponse
      * 
      * @return int
      */
+    #[\Override]
     public function statusCode(): int {
         return $this->statusCode;
     }
@@ -122,6 +126,7 @@ class MockHttpResponse implements HttpResponse
      * 
      * @return array
      */
+    #[\Override]
     public function headers(): array {
         return $this->headers;
     }
@@ -131,21 +136,24 @@ class MockHttpResponse implements HttpResponse
      * 
      * @return string
      */
+    #[\Override]
     public function body(): string {
         return $this->body;
     }
 
+    #[\Override]
     public function isStreamed(): bool {
         return $this->streaming;
     }
 
     /**
      * Read chunks of the stream
-     * 
-     * @param int $chunkSize Not used in mock implementation, included for interface compatibility
-     * @return iterable<string>
+     *
+     * @param int|null $chunkSize Not used in mock implementation, included for interface compatibility
+     * @return \Generator<string>
      */
-    public function stream(?int $chunkSize = null): iterable {
+    #[\Override]
+    public function stream(?int $chunkSize = null): \Generator {
         foreach ($this->chunks as $chunk) {
             $this->events?->dispatch(new HttpResponseChunkReceived($chunk));
             yield $chunk;

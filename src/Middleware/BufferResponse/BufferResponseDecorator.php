@@ -23,6 +23,7 @@ class BufferResponseDecorator extends BaseResponseDecorator
         parent::__construct($request, $response);
     }
 
+    #[\Override]
     public function body(): string {
         if ($this->bufferedBody === null) {
             $this->bufferedBody = $this->response->body();
@@ -30,7 +31,8 @@ class BufferResponseDecorator extends BaseResponseDecorator
         return $this->bufferedBody;
     }
 
-    public function stream(?int $chunkSize = null): iterable {
+    #[\Override]
+    public function stream(?int $chunkSize = null): \Generator {
         if (!$this->isStreamBuffered) {
             foreach ($this->response->stream($chunkSize) as $chunk) {
                 $this->bufferedChunks[] = $chunk;

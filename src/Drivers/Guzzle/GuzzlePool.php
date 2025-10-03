@@ -36,6 +36,7 @@ class GuzzlePool implements CanHandleRequestPool
      * @return array Array of results for each request, in the same order as the input.
      * @throws HttpRequestException If any request fails and failOnError is true.
      */
+    #[\Override]
     public function pool(array $requests, ?int $maxConcurrent = null): array {
         $responses = [];
         $concurrency = $maxConcurrent ?? $this->config->maxConcurrent;
@@ -54,6 +55,9 @@ class GuzzlePool implements CanHandleRequestPool
 
     // INTERNAL ////////////////////////////////////////////////////////////////
 
+    /**
+     * @return callable(): \Generator
+     */
     private function createRequestGenerator(array $requests): callable {
         return function() use ($requests) {
             foreach ($requests as $key => $request) {
@@ -89,8 +93,13 @@ class GuzzlePool implements CanHandleRequestPool
     }
 
     private function handleFulfilledResponse(ResponseInterface $response): Result {
-        $this->events->dispatch(new HttpResponseReceived($response->getStatusCode()));
+        if ($this->events !== null) {
+            $this->events->dispatch(new HttpResponseReceived($response->getStatusCode()));
+        }
         $isStreamed = $this->isStreamed($response);
+        if ($this->events === null) {
+            throw new \RuntimeException('Event dispatcher is required for pooled requests');
+        }
         return Result::success(new PsrHttpResponse(
             response: $response,
             stream: $response->getBody(),
@@ -100,6 +109,9 @@ class GuzzlePool implements CanHandleRequestPool
         ));
     }
 
+    /**
+     * @param mixed $reason
+     */
     private function handleRejectedResponse($reason): Failure {
         if ($this->config->failOnError) {
             $errorMessage = is_string($reason) ? $reason : 'Unknown error';
@@ -117,12 +129,14 @@ class GuzzlePool implements CanHandleRequestPool
     }
 
     private function dispatchRequestEvent(HttpRequest $request): void {
-        $this->events->dispatch(new HttpRequestSent([
-            'url' => $request->url(),
-            'method' => $request->method(),
-            'headers' => $request->headers(),
-            'body' => $request->body()->toString()
-        ]));
+        if ($this->events !== null) {
+            $this->events->dispatch(new HttpRequestSent([
+                'url' => $request->url(),
+                'method' => $request->method(),
+                'headers' => $request->headers(),
+                'body' => $request->body()->toString()
+            ]));
+        }
     }
 
     private function normalizeResponses(array $responses): array {

@@ -20,6 +20,7 @@ class PsrHttpResponse implements HttpResponse
     private EventDispatcherInterface $events;
     private bool $isStreamed;
     private int $streamChunkSize;
+    private ?string $cachedBody = null;
 
     public function __construct(
         ResponseInterface $response,
@@ -40,6 +41,7 @@ class PsrHttpResponse implements HttpResponse
      *
      * @return int
      */
+    #[\Override]
     public function statusCode(): int {
         return $this->response->getStatusCode();
     }
@@ -47,8 +49,9 @@ class PsrHttpResponse implements HttpResponse
     /**
      * Get the response headers
      *
-     * @return array<string, string>
+     * @return array<string, array<string>>
      */
+    #[\Override]
     public function headers(): array {
         return $this->response->getHeaders();
     }
@@ -58,16 +61,23 @@ class PsrHttpResponse implements HttpResponse
      *
      * @return string
      */
+    #[\Override]
     public function body(): string {
-        return $this->response->getBody()->getContents();
+        if ($this->cachedBody === null) {
+            $body = $this->response->getBody();
+            $body->rewind(); // Rewind to ensure we read from the beginning
+            $this->cachedBody = $body->getContents();
+        }
+        return $this->cachedBody;
     }
 
     /**
      * Read chunks of the stream
      *
-     * @return iterable<string>
+     * @return \Generator<string>
      */
-    public function stream(?int $chunkSize = null): iterable {
+    #[\Override]
+    public function stream(?int $chunkSize = null): \Generator {
         while (!$this->stream->eof()) {
             $chunk = $this->stream->read($chunkSize ?? $this->streamChunkSize);
             $this->events->dispatch(new HttpResponseChunkReceived($chunk));
@@ -75,6 +85,7 @@ class PsrHttpResponse implements HttpResponse
         }
     }
 
+    #[\Override]
     public function isStreamed(): bool {
         return $this->isStreamed;
     }

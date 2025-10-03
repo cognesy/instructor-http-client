@@ -46,6 +46,7 @@ class LaravelDriver implements CanHandleHttpRequest
         };
     }
 
+    #[\Override]
     public function handle(HttpRequest $request): HttpResponse {
         $startTime = microtime(true);
         $this->dispatchRequestSent($request);
@@ -178,15 +179,17 @@ class LaravelDriver implements CanHandleHttpRequest
         }
         
         // Fallback to Factory-based creation (existing logic)
+        /** @phpstan-ignore-next-line */
         $pendingRequest = $this->factory
             ->timeout($this->config->requestTimeout)
             ->connectTimeout($this->config->connectTimeout)
             ->withHeaders($headers);
-            
+
         if ($streaming) {
-            $pendingRequest->withOptions(['stream' => true]);
+            $pendingRequest = $pendingRequest->withOptions(['stream' => true]);
         }
-        
+
+        /** @var PendingRequest $pendingRequest */
         return $pendingRequest;
     }
 

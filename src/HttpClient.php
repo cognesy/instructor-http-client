@@ -5,6 +5,7 @@ namespace Cognesy\Http;
 use Cognesy\Events\Contracts\CanHandleEvents;
 use Cognesy\Events\EventBusResolver;
 use Cognesy\Events\Traits\HandlesEvents;
+use Cognesy\Http\Config\HttpClientConfig;
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
 use Cognesy\Http\Contracts\HttpMiddleware;
 use Cognesy\Http\Data\HttpRequest;
@@ -112,7 +113,7 @@ class HttpClient
     /**
      * Extracts configuration from the current driver to pass to pool handler.
      */
-    private function getConfigFromDriver(): ?HttpClientConfig {
+    private function getConfigFromDriver(): null {
         // For now, we'll let the factory create with default config
         // In future, we might want to extract actual config from driver
         return null;

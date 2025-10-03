@@ -14,9 +14,13 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  */
 class StreamByLineMiddleware extends BaseMiddleware
 {
+    /** @var Closure(string): (bool|string) */
     protected Closure $parser;
     protected EventDispatcherInterface $events;
 
+    /**
+     * @param callable(string): (bool|string)|null $parser
+     */
     public function __construct(
         ?callable $parser = null,
         ?EventDispatcherInterface $events = null
@@ -26,11 +30,13 @@ class StreamByLineMiddleware extends BaseMiddleware
         $this->events = $events ?? new EventDispatcher();
     }
 
+    #[\Override]
     protected function shouldDecorateResponse(HttpRequest $request, HttpResponse $response): bool
     {
         return $request->isStreamed();
     }
 
+    #[\Override]
     protected function toResponse(HttpRequest $request, HttpResponse $response): HttpResponse
     {
         return new StreamByLineResponseDecorator($request, $response, $this->parser, $this->events);

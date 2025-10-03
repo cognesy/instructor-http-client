@@ -16,7 +16,8 @@ class EventSourceResponseDecorator extends BaseResponseDecorator
         parent::__construct($request, $response);
     }
 
-    public function stream(?int $chunkSize = null): iterable {
+    #[\Override]
+    public function stream(?int $chunkSize = null): \Generator {
         $buffer = '';
         foreach ($this->response->stream($chunkSize) as $chunk) {
             $buffer = $this->handleChunk($buffer, $chunk);
