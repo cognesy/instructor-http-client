@@ -2,11 +2,11 @@
 
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
 use Cognesy\Http\Contracts\HttpMiddleware;
-use Cognesy\Http\Contracts\HttpResponse;
+use Cognesy\Http\Creation\HttpClientBuilder;
 use Cognesy\Http\Data\HttpRequest;
+use Cognesy\Http\Data\HttpResponse;
 use Cognesy\Http\Drivers\Mock\MockHttpDriver;
-use Cognesy\Http\Drivers\Mock\MockHttpResponse;
-use Cognesy\Http\HttpClientBuilder;
+use Cognesy\Http\Drivers\Mock\MockHttpResponseFactory;
 
 beforeEach(function() {
     $this->testStorageDir = sys_get_temp_dir() . '/http_test_recordings';
@@ -33,7 +33,7 @@ afterEach(function() {
 test('HTTP client with mock driver', function() {
     // Arrange
     $mockDriver = new MockHttpDriver();
-    $expectedResponse = MockHttpResponse::success(body: '{"success":true}');
+    $expectedResponse = MockHttpResponseFactory::success(body: '{"success":true}');
 
     $mockDriver->addResponse(
         $expectedResponse,
@@ -70,7 +70,7 @@ test('HTTP client with mock driver', function() {
 test('HTTP client with middleware', function() {
     // Arrange
     $mockDriver = new MockHttpDriver();
-    $expectedResponse = MockHttpResponse::success(body: '{"id":123}');
+    $expectedResponse = MockHttpResponseFactory::success(body: '{"id":123}');
 
     $mockDriver->addResponse(
         $expectedResponse,
@@ -85,7 +85,7 @@ test('HTTP client with middleware', function() {
         public function handle(HttpRequest $request, CanHandleHttpRequest $next): HttpResponse
         {
             // Add a test header to the request
-            $request->headers['X-Test'] = 'Modified by middleware';
+            $request->withHeader('X-Test', 'Modified by middleware');
             return $next->handle($request);
         }
     });

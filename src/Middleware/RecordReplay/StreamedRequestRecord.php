@@ -2,9 +2,9 @@
 
 namespace Cognesy\Http\Middleware\RecordReplay;
 
-use Cognesy\Http\Contracts\HttpResponse;
 use Cognesy\Http\Data\HttpRequest;
-use Cognesy\Http\Drivers\Mock\MockHttpResponse;
+use Cognesy\Http\Data\HttpResponse;
+use Cognesy\Http\Drivers\Mock\MockHttpResponseFactory;
 
 /**
  * A specialized value object for handling streamed HTTP interactions.
@@ -69,17 +69,17 @@ class StreamedRequestRecord extends RequestRecord
     #[\Override]
     public function toResponse(bool $isStreaming = true): HttpResponse {
         if ($isStreaming) {
-            return MockHttpResponse::streaming(
+            return MockHttpResponseFactory::streaming(
                 $this->getStatusCode(),
                 $this->getResponseHeaders(),
                 $this->chunks,
             );
         }
-        return MockHttpResponse::success(
+        return MockHttpResponseFactory::success(
             $this->getStatusCode(),
             $this->getResponseHeaders(),
             $this->getResponseBody(),
-            $this->chunks,
+            [], // Don't pass chunks for non-streaming response
         );
     }
 

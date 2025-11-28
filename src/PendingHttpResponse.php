@@ -3,8 +3,8 @@
 namespace Cognesy\Http;
 
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
-use Cognesy\Http\Contracts\HttpResponse;
 use Cognesy\Http\Data\HttpRequest;
+use Cognesy\Http\Data\HttpResponse;
 use Generator;
 
 class PendingHttpResponse
@@ -15,7 +15,7 @@ class PendingHttpResponse
     private ?HttpResponse $response = null;
 
     public function __construct(
-        HttpRequest          $request,
+        HttpRequest $request,
         CanHandleHttpRequest $driver,
     ) {
         $this->request = $request;
@@ -45,13 +45,16 @@ class PendingHttpResponse
     }
 
     /**
-     * @param int|null $chunkSize
+     * Stream response chunks using the configured adapter chunk size.
+     *
+     * Chunk sizing is controlled by adapters and HttpClientConfig::streamChunkSize.
+     *
      * @return Generator<string>
      */
-    public function stream(?int $chunkSize = null): Generator {
+    public function stream(): Generator {
         yield from $this
             ->makeResponse($this->request->withStreaming(true))
-            ->stream($chunkSize);
+            ->stream();
     }
 
     // INTERNAL ////////////////////////////////////////////////////////////////////////

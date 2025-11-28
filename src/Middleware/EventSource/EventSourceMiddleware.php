@@ -2,8 +2,8 @@
 
 namespace Cognesy\Http\Middleware\EventSource;
 
-use Cognesy\Http\Contracts\HttpResponse;
 use Cognesy\Http\Data\HttpRequest;
+use Cognesy\Http\Data\HttpResponse;
 use Cognesy\Http\Middleware\Base\BaseMiddleware;
 use Cognesy\Http\Middleware\EventSource\Listeners\CanListenToHttpEvents;
 
@@ -60,6 +60,6 @@ class EventSourceMiddleware extends BaseMiddleware
 
     #[\Override]
     protected function toResponse(HttpRequest $request, HttpResponse $response): HttpResponse {
-        return new EventSourceResponseDecorator($request, $response, $this->listeners);
+        return EventSourceResponseDecorator::decorate($request, $response, $this->listeners);
     }
 }

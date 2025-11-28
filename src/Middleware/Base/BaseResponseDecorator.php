@@ -2,82 +2,29 @@
 
 namespace Cognesy\Http\Middleware\Base;
 
-use Cognesy\Http\Contracts\HttpResponse;
-use Cognesy\Http\Data\HttpRequest;
+use Closure;
+use Cognesy\Http\Data\HttpResponse;
+use Cognesy\Http\Stream\TransformStream;
 
 /**
- * Class BaseResponseDecorator
+ * BaseResponseDecorator
  *
- * A base class for convenient decoration of HttpResponse objects
- * by overriding only the methods you need to change:
- * - statusCode() for the HTTP status code
- * - headers() for the HTTP headers
- * - contents() for the full response body
- * - streamContents() for streaming response chunks
- * - toChunk() to transform each chunk in a streamed response
+ * Composition-based response decoration utility.
+ * Transforms the response stream without subclassing HttpResponse.
  */
-class BaseResponseDecorator implements HttpResponse
+final class BaseResponseDecorator
 {
-    public function __construct(
-        protected HttpRequest  $request,
-        protected HttpResponse $response,
-    ) {}
-
     /**
-     * Get the response status code
+     * Decorate the response by mapping each chunk through a transformer.
      *
-     * @return int
+     * @param callable(string):string $transformChunk
      */
-    #[\Override]
-    public function statusCode(): int {
-        return $this->response->statusCode();
-    }
-
-    /**
-     * Get the response headers
-     *
-     * @return array
-     */
-    #[\Override]
-    public function headers(): array {
-        return $this->response->headers();
-    }
-
-    /**
-     * Get the response content
-     *
-     * @return string
-     */
-    #[\Override]
-    public function body(): string {
-        return $this->response->body();
-    }
-
-    /**
-     * Read chunks of the stream
-     *
-     * @param int|null $chunkSize
-     * @return \Generator<string>
-     */
-    #[\Override]
-    public function stream(?int $chunkSize = null): \Generator {
-        foreach ($this->response->stream($chunkSize) as $chunk) {
-            yield $this->toChunk($chunk);
-        }
-    }
-
-    /**
-     * Transform a chunk of streamed response content
-     *
-     * @param string $chunk
-     * @return string
-     */
-    protected function toChunk(string $chunk): string {
-        return $chunk;
-    }
-
-    #[\Override]
-    public function isStreamed(): bool {
-        return $this->response->isStreamed();
+    public static function decorate(HttpResponse $response, callable $transformChunk): HttpResponse {
+        return $response->withStream(
+            new TransformStream(
+                $response->rawStream(),
+                Closure::fromCallable($transformChunk),
+            )
+        );
     }
 }

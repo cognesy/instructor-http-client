@@ -3,9 +3,10 @@
 namespace Cognesy\Http\Drivers\Mock;
 
 use Cognesy\Events\Dispatchers\EventDispatcher;
+use Cognesy\Http\Contracts\CanAdaptHttpResponse;
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
-use Cognesy\Http\Contracts\HttpResponse;
 use Cognesy\Http\Data\HttpRequest;
+use Cognesy\Http\Data\HttpResponse;
 use Cognesy\Http\Events\HttpResponseReceived;
 use InvalidArgumentException;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -58,7 +59,7 @@ class MockHttpDriver implements CanHandleHttpRequest
         return $response;
     }
 
-    // INTERNAL /////////////////////////////////////////////
+    // INTERNAL //////////////////////////////////////////////////////////////////////////
 
     private function recordRequest(HttpRequest $request): void {
         $this->receivedRequests[] = $request;

@@ -266,28 +266,15 @@ return [
 ];
 ```
 
-### BufferResponse Middleware
-
-The `BufferResponseMiddleware` stores response bodies and streaming chunks for reuse:
-
-```php
-use Cognesy\Http\Middleware\BufferResponse\BufferResponseMiddleware;
-
-// Add buffer response middleware
-$client->withMiddleware(new BufferResponseMiddleware());
-```
-
-This middleware is useful when you need to access a response body or stream multiple times, as it stores the data after the first access.
-
 ### StreamByLine Middleware
 
 The `StreamByLineMiddleware` processes streaming responses line by line:
 
 ```php
-use Cognesy\Http\Middleware\StreamByLine\StreamByLineMiddleware;
+use Cognesy\Http\Middleware\ServerSideEvents\StreamSSEsMiddleware;
 
 // Add stream by line middleware
-$client->withMiddleware(new StreamByLineMiddleware());
+$client->withMiddleware(new StreamSSEsMiddleware());
 ```
 
 You can customize how lines are processed by providing a parser function:
