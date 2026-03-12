@@ -1,3 +1,9 @@
+---
+title: HTTP Client
+description: Framework-agnostic HTTP client — requests, responses, streaming, pooling, and middleware
+package: http-client
+---
+
 # HTTP Client Cheat Sheet
 
 Immutability rule: `with*()` methods return new instances.
@@ -21,7 +27,7 @@ Immutability rule: `with*()` methods return new instances.
 - `withSSEStream(): HttpClient` is deprecated
 
 ### `HttpClientRuntime`
-- `HttpClientRuntime::fromConfig(...): HttpClientRuntime`
+- `HttpClientRuntime::fromConfig(?HttpClientConfig $config, ?CanHandleEvents $events, ?CanHandleHttpRequest $driver, ?CanProvideHttpDrivers $drivers, ?object $clientInstance, ?MiddlewareStack $middlewareStack): HttpClientRuntime` (all parameters optional)
 - `client(): HttpClient`
 - `send(HttpRequest $request): PendingHttpResponse`
 - `withMiddleware(HttpMiddleware $middleware, ?string $name = null): self`
@@ -33,6 +39,7 @@ Immutability rule: `with*()` methods return new instances.
 - `config(): HttpClientConfig`
 
 ### `HttpClientBuilder`
+- `new HttpClientBuilder(?CanHandleEvents $events = null)`
 - `withConfig(HttpClientConfig $config): self`
 - `withDsn(string $dsn): self`
 - `withDebugConfig(DebugConfig $debugConfig): self`
@@ -47,6 +54,9 @@ Immutability rule: `with*()` methods return new instances.
 - `withEventBus(CanHandleEvents $events): self`
 - `create(): HttpClient`
 - `createRuntime(): HttpClientRuntime`
+
+### `HttpClientConfigFactory`
+- `default(): HttpClientConfig`
 
 ## Config
 
@@ -139,6 +149,11 @@ Methods:
 Note:
 - `body()` throws for streamed responses
 
+### `StreamInterface`
+- extends `IteratorAggregate<int, string>`
+- `getIterator(): Traversable`
+- `isCompleted(): bool`
+
 ### `PendingHttpResponse`
 - `get(): HttpResponse`
 - `statusCode(): int`
@@ -178,11 +193,20 @@ Notes:
 - `MiddlewareStack`: `append`, `appendMany`, `prepend`, `prependMany`, `remove`, `replace`, `clear`, `all`, `has`, `get`, `filter`, `decorate`, `toDebugArray`
 
 ### Built-in Middleware
-- `RetryMiddleware`
-- `CircuitBreakerMiddleware`
-- `IdempotencyMiddleware`
-- `EventSourceMiddleware`
-- `RecordReplayMiddleware`
+- `RetryMiddleware(RetryPolicy $policy)`
+- `CircuitBreakerMiddleware(CircuitBreakerPolicy $policy, ?CanStoreCircuitBreakerState $store)`
+- `IdempotencyMiddleware(string $headerName, array $methods, ?array $hostAllowList, ?callable $keyProvider)`
+- `EventSourceMiddleware(bool $enabled)`
+  - `withListeners(CanListenToHttpEvents ...$listeners): self`
+  - `withParser(callable $parser): self`
+- `RecordReplayMiddleware(string $mode, ?string $storageDir, bool $fallbackToRealRequests, ?EventDispatcherInterface $events)`
+  - modes: `MODE_PASS`, `MODE_RECORD`, `MODE_REPLAY`
+  - `setMode(string $mode): self`
+  - `getMode(): string`
+  - `setStorageDir(string $dir): self`
+  - `setFallbackToRealRequests(bool $fallback): self`
+  - `getRecords(): ?RequestRecords`
+- `StreamSSEsMiddleware` (deprecated, use `EventSourceMiddleware::withParser()` instead)
 
 Record/replay notes:
 - request identity is `method + url + body`
@@ -236,11 +260,11 @@ Replies:
 - `replySSEFromJson(array $payloads, bool $addDone = true, int $status = 200, array $headers = []): MockHttpDriver`
 
 ### `MockHttpResponseFactory`
-- `success(...)`
-- `error(...)`
-- `streaming(...)`
-- `json(...)`
-- `sse(...)`
+- `success(int $statusCode = 200, array $headers = [], string $body = '', array $chunks = []): HttpResponse`
+- `error(int $statusCode = 500, array $headers = [], string $body = '', array $chunks = []): HttpResponse`
+- `streaming(int $statusCode = 200, array $headers = [], array $chunks = []): HttpResponse`
+- `json(array|string|\JsonSerializable $data, int $statusCode = 200, array $headers = []): HttpResponse`
+- `sse(array $payloads, bool $addDone = true, int $statusCode = 200, array $headers = []): HttpResponse`
 
 Testing guidance:
 
@@ -254,7 +278,7 @@ Testing guidance:
 - Network: `NetworkException`, `ConnectionException`, `TimeoutException`
 - HTTP status: `HttpClientErrorException`, `ServerErrorException`
 - Middleware-related: `CircuitBreakerOpenException`
-- Factory: `HttpExceptionFactory::fromStatusCode(...)`
+- Factory: `HttpExceptionFactory::fromStatusCode(int $statusCode, ?HttpRequest $request, ?HttpResponse $response, ?float $duration, ?Throwable $previous): HttpRequestException`
 
 Useful exception methods:
 - `getRequest(): ?HttpRequest`
