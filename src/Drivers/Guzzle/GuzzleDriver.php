@@ -14,6 +14,7 @@ use Cognesy\Http\Exceptions\HttpExceptionFactory;
 use Cognesy\Http\Exceptions\HttpRequestException;
 use Cognesy\Http\Exceptions\NetworkException;
 use Cognesy\Http\Exceptions\TimeoutException;
+use Cognesy\Http\Telemetry\HttpRequestTelemetry;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
@@ -57,7 +58,7 @@ class GuzzleDriver implements CanHandleHttpRequest
             $this->dispatchStatusCodeFailed($httpResponse->statusCode(), $request);
             throw $httpException;
         }
-        $this->dispatchResponseReceived($httpResponse);
+        $this->dispatchResponseReceived($httpResponse, $request);
         return $httpResponse;
     }
 
@@ -86,6 +87,7 @@ class GuzzleDriver implements CanHandleHttpRequest
             stream: $response->getBody(),
             events: $this->events,
             isStreamed: $request->isStreamed(),
+            requestId: $request->id,
             streamChunkSize: $this->config->streamChunkSize,
         ))->toHttpResponse();
     }
@@ -113,35 +115,46 @@ class GuzzleDriver implements CanHandleHttpRequest
 
     private function dispatchRequestSent(HttpRequest $request): void {
         $this->events->dispatch(new HttpRequestSent([
+            'requestId' => $request->id,
             'url' => $request->url(),
             'method' => $request->method(),
             'headers' => $request->headers(),
             'body' => $request->body()->toArray(),
+            ...HttpRequestTelemetry::metadataForRequest($request),
         ]));
     }
 
     private function dispatchStatusCodeFailed(int $statusCode, HttpRequest $request): void {
         $this->events->dispatch(new HttpRequestFailed([
+            'requestId' => $request->id,
             'url' => $request->url(),
             'method' => $request->method(),
             'statusCode' => $statusCode,
+            ...HttpRequestTelemetry::metadataForRequest($request),
         ]));
     }
 
     private function dispatchRequestFailed(HttpRequestException $exception, HttpRequest $request): void {
         $this->events->dispatch(new HttpRequestFailed([
+            'requestId' => $request->id,
             'url' => $request->url(),
             'method' => $request->method(),
             'headers' => $request->headers(),
             'body' => $request->body()->toArray(),
             'errors' => $exception->getMessage(),
+            ...HttpRequestTelemetry::metadataForRequest($request),
         ]));
     }
 
-    private function dispatchResponseReceived(HttpResponse $response): void {
-        $this->events->dispatch(new HttpResponseReceived([
-            'statusCode' => $response->statusCode()
-        ]));
+    private function dispatchResponseReceived(HttpResponse $response, HttpRequest $request): void {
+        $isStreamed = $response->isStreamed();
+        $this->events->dispatch(new HttpResponseReceived(array_filter([
+            'requestId' => $request->id,
+            'statusCode' => $response->statusCode(),
+            'isStreamed' => $isStreamed,
+            'body' => !$isStreamed ? $response->body() : null,
+            ...HttpRequestTelemetry::metadataForRequest($request),
+        ], static fn(mixed $v): bool => $v !== null)));
     }
 
 }

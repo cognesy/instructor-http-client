@@ -5,6 +5,7 @@ namespace Cognesy\Http\Drivers\Guzzle;
 use Cognesy\Http\Contracts\CanAdaptHttpResponse;
 use Cognesy\Http\Data\HttpResponse;
 use Cognesy\Http\Events\HttpResponseChunkReceived;
+use Cognesy\Http\Events\HttpStreamCompleted;
 use Cognesy\Http\Stream\IterableStream;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -21,6 +22,7 @@ class PsrHttpResponseAdapter implements CanAdaptHttpResponse
     private StreamInterface $stream;
     private EventDispatcherInterface $events;
     private bool $isStreamed;
+    private string $requestId;
     private int $streamChunkSize;
     private ?string $cachedBody = null;
 
@@ -29,12 +31,14 @@ class PsrHttpResponseAdapter implements CanAdaptHttpResponse
         StreamInterface $stream,
         EventDispatcherInterface $events,
         bool $isStreamed,
+        string $requestId,
         int $streamChunkSize = 256,
     ) {
         $this->response = $response;
         $this->stream = $stream;
         $this->events = $events;
         $this->isStreamed = $isStreamed;
+        $this->requestId = $requestId;
         $this->streamChunkSize = $streamChunkSize;
     }
 
@@ -79,10 +83,32 @@ class PsrHttpResponseAdapter implements CanAdaptHttpResponse
      * @return \Generator<string>
      */
     private function stream(): \Generator {
-        while (!$this->stream->eof()) {
-            $chunk = $this->stream->read($this->streamChunkSize);
-            $this->events->dispatch(new HttpResponseChunkReceived($chunk));
-            yield $chunk;
+        $accumulated = '';
+        $outcome = 'abandoned';
+        $error = null;
+        try {
+            while (!$this->stream->eof()) {
+                $chunk = $this->stream->read($this->streamChunkSize);
+                $accumulated .= $chunk;
+                $this->events->dispatch(new HttpResponseChunkReceived([
+                    'requestId' => $this->requestId,
+                    'chunk' => $chunk,
+                ]));
+                yield $chunk;
+            }
+            $outcome = 'completed';
+        } catch (\Throwable $error) {
+            $outcome = 'failed';
+            throw $error;
+        } finally {
+            $payload = ['requestId' => $this->requestId, 'outcome' => $outcome];
+            $payload = match (true) {
+                $error !== null => [...$payload, 'error' => $error->getMessage()],
+                $outcome === 'completed' => [...$payload, 'body' => $accumulated],
+                default => $payload,
+            };
+
+            $this->events->dispatch(new HttpStreamCompleted($payload));
         }
     }
 }
