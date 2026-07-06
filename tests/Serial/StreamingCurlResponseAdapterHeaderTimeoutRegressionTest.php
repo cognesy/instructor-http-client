@@ -37,6 +37,10 @@ namespace {
     use Cognesy\Http\Drivers\Curl\StreamingCurlResponseAdapter;
     use Cognesy\Http\Exceptions\TimeoutException;
 
+    // Overrides curl functions in the Curl namespace + uses static hook state;
+    // not safe under parallel scheduling — runs in the fast lane's serial pass.
+    uses()->group('serial');
+
     it('throws when headers are not received before streaming priming timeout', function () {
         if (!extension_loaded('curl')) {
             $this->markTestSkipped('cURL extension not available');
