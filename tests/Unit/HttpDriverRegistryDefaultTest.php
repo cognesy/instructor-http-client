@@ -1,7 +1,6 @@
 <?php declare(strict_types=1);
 
 use Cognesy\Http\Contracts\CanHandleHttpRequest;
-use Cognesy\Http\Creation\BundledHttpDrivers;
 use Cognesy\Http\Creation\HttpDriverRegistry;
 use Cognesy\Http\Data\HttpRequest;
 use Cognesy\Http\Data\HttpResponse;
@@ -15,14 +14,14 @@ it('returns the same bundled registry instance on every call', function () {
     // Three entries, so the absolute win is small -- but this registry is resolved by
     // HttpClientRuntime on every implicitly-constructed client, which is also every
     // implicitly-constructed inference runtime.
-    expect(BundledHttpDrivers::registry())->toBe(BundledHttpDrivers::registry());
+    expect(HttpDriverRegistry::default())->toBe(HttpDriverRegistry::default());
 })->group('driver-registry');
 
 it('does not let a derived registry affect the shared one', function () {
     // The entire safety argument for sharing one instance. docs/9-1-custom-clients.md shows
     // exactly this call shape, so a caller reaching the shared object is a documented path,
     // not a hypothetical one.
-    $derived = BundledHttpDrivers::registry()
+    $derived = HttpDriverRegistry::default()
         ->withoutDriver('curl')
         ->withDriver('custom-x', fn($config, $events, $clientInstance) => new class implements CanHandleHttpRequest {
             #[\Override]
@@ -33,8 +32,8 @@ it('does not let a derived registry affect the shared one', function () {
 
     expect($derived->has('curl'))->toBeFalse()
         ->and($derived->has('custom-x'))->toBeTrue()
-        ->and(BundledHttpDrivers::registry()->has('curl'))->toBeTrue()
-        ->and(BundledHttpDrivers::registry()->has('custom-x'))->toBeFalse();
+        ->and(HttpDriverRegistry::default()->has('curl'))->toBeTrue()
+        ->and(HttpDriverRegistry::default()->has('custom-x'))->toBeFalse();
 })->group('driver-registry');
 
 it('builds fromArray without folding the public wither over the map', function () {
